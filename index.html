@@ -532,7 +532,8 @@ function dropRoom(entry){ // gone from this phone only; the room itself is untou
     loadRoom(rooms[0]||null);
   }
   saveRooms(); render();
-  if(!R) showWelcome(false); else scheduleSync(50);
+  // never over an open window: a join screen (a new invite tapped while an ended jukebox is dropped) must survive
+  if(!R){ if(!$('#modal')) showWelcome(false); } else scheduleSync(50);
 }
 function resetDeck(){ stopAll(); current=null; setPlaying(false); $('#idle').classList.remove('hide'); }
 function selectRoom(entry){ // make this room the open one; the doc of the old one is already saved
