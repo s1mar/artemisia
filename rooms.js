@@ -63,20 +63,31 @@ function parseLink(s){
 }
 
 /* ---------- HTTP api ---------- */
-function api(base,fetchImpl){
+function api(base,fetchImpl,opts){
   base=String(base).replace(/\/+$/,'');
+  // A stalled request (a weak Wi-Fi link can hold one for minutes) is given up as offline, so the
+  // one-at-a-time sync is never stuck behind it; the caller retries like any offline failure.
+  const limit=(opts&&opts.timeoutMs)||30000; // a full page (600 KB push, 500-record pull) fits in 30 s even at ~20 KB/s
   const doFetch=(u,o)=>(fetchImpl||root.fetch)(u,o);
-  async function call(method,path,s,body){
+  async function send(method,path,s,body,signal){
     const headers={};
     if(s) headers.Authorization='Bearer '+s.token;
     const opt={method,headers};
+    if(signal) opt.signal=signal;
     if(body!==undefined){ headers['Content-Type']='application/json'; opt.body=JSON.stringify(body); }
     let res;
     try{ res=await doFetch(base+'/v1'+path,opt); }catch(e){ throw new RoomError(0,'offline'); }
     let data=null;
-    if(res.status!==204){ try{ data=await res.json(); }catch(e){ data=null; } }
+    if(res.status!==204){ try{ data=await res.json(); }catch(e){ if(signal&&signal.aborted) throw new RoomError(0,'offline'); data=null; } }
     if(!res.ok) throw new RoomError(res.status,(data&&data.error)||'http',data||undefined);
     return data;
+  }
+  function call(method,path,s,body){
+    if(!root.setTimeout) return send(method,path,s,body,null);
+    const ac=root.AbortController?new root.AbortController():null;
+    let timer;
+    const late=new Promise((res,rej)=>{ timer=root.setTimeout(()=>{ if(ac) ac.abort(); rej(new RoomError(0,'offline')); },limit); });
+    return Promise.race([send(method,path,s,body,ac&&ac.signal),late]).finally(()=>root.clearTimeout(timer));
   }
   const r=s=>'/rooms/'+s.room;
   return {
