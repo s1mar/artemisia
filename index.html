@@ -485,29 +485,29 @@ function clink(kind){
 }
 
 /* ---------- state: many rooms on one phone ---------- */
-let rooms=LS.get('jb.rooms',[]); if(!Array.isArray(rooms)) rooms=[];
+let rooms=LS.get('art.rooms',[]); if(!Array.isArray(rooms)) rooms=[];
 let R=null, doc=C.newDoc(), me=null, dirty=false, look={}, syncState=newSyncState();
 function newSyncState(){ return {since:0,vers:{},sent:{}}; }
 let openId=null, incoming=new Set(), netState='local', lastSync=0;
 const rk=(k,room)=>k+'.'+(room||(R&&R.room));
-const draftKey=id=>rk('jb.draft')+'.'+id;
-function saveRooms(){ LS.set('jb.rooms',rooms); LS.set('jb.cur',R?R.room:null); rememberHome(); }
+const draftKey=id=>rk('art.draft')+'.'+id;
+function saveRooms(){ LS.set('art.rooms',rooms); LS.set('art.cur',R?R.room:null); rememberHome(); }
 function loadRoom(entry){
   R=entry||null; me=R?R.me:null;
-  doc=R?C.merge(C.newDoc(),LS.get(rk('jb.doc'),C.newDoc())):C.newDoc();
-  dirty=R?LS.get(rk('jb.dirty'),false):false; syncState=R?LS.get(rk('jb.sync'),newSyncState()):newSyncState(); look=R?LS.get(rk('jb.look'),{}):{};
+  doc=R?C.merge(C.newDoc(),LS.get(rk('art.doc'),C.newDoc())):C.newDoc();
+  dirty=R?LS.get(rk('art.dirty'),false):false; syncState=R?LS.get(rk('art.sync'),newSyncState()):newSyncState(); look=R?LS.get(rk('art.look'),{}):{};
 }
-function persist(){ if(!R) return; LS.set(rk('jb.doc'),doc); LS.set(rk('jb.dirty'),dirty); LS.set(rk('jb.sync'),syncState); }
+function persist(){ if(!R) return; LS.set(rk('art.doc'),doc); LS.set(rk('art.dirty'),dirty); LS.set(rk('art.sync'),syncState); }
 function mutate(fn,delay){
   if(!R) return;
   fn(doc); C.fixSlots(doc); dirty=true; persist(); render();
   scheduleSync(delay==null?600:delay);
 }
-loadRoom(rooms.find(r=>r.room===LS.get('jb.cur',null))||rooms[0]||null);
+loadRoom(rooms.find(r=>r.room===LS.get('art.cur',null))||rooms[0]||null);
 
 /* ---------- the rooms server: the doc is encrypted on this phone, the key never leaves it ---------- */
 // Testing only: on a local dev host the API base can point at a local worker.
-if(/(^|\.)localhost$|^127\.0\.0\.1$|^\[::1\]$/.test(location.hostname)){ const o=LS.get('jb.api',null); if(o) API=o; }
+if(/(^|\.)localhost$|^127\.0\.0\.1$|^\[::1\]$/.test(location.hostname)){ const o=LS.get('art.api',null); if(o) API=o; }
 const A=()=>JBRooms.api(API);
 const sess=e=>({room:e.room,token:e.token,key:e.key});
 const engineFor=(e,st)=>JBSync.create({api:A(),session:sess(e),core:C,state:st});
@@ -525,8 +525,8 @@ async function writeRoom(s,fn,st,base){
 function signedOut(rm){ dropRoom(rm); callout('THIS PHONE WAS SIGNED OUT OF '+(rm.title||'ARTEMISIA').toUpperCase(),'bad',4200); }
 function dropRoom(entry){ // gone from this phone only; the room itself is untouched
   rooms=rooms.filter(r=>r.room!==entry.room);
-  for(const k of ['jb.doc','jb.dirty','jb.look','jb.sync']) LS.del(k+'.'+entry.room);
-  try{ const pre='jb.draft.'+entry.room+'.'; Object.keys(localStorage).filter(k=>k.indexOf(pre)===0).forEach(k=>localStorage.removeItem(k)); }catch(e){}
+  for(const k of ['art.doc','art.dirty','art.look','art.sync']) LS.del(k+'.'+entry.room);
+  try{ const pre='art.draft.'+entry.room+'.'; Object.keys(localStorage).filter(k=>k.indexOf(pre)===0).forEach(k=>localStorage.removeItem(k)); }catch(e){}
   if(R&&R.room===entry.room){
     clearTimeout(syncTimer); syncTimer=null; syncAt=0; closeSheet(); resetDeck();
     loadRoom(rooms[0]||null);
@@ -758,7 +758,7 @@ function retitle(songs){ // songs saved while offline get their titles later
 let promptIx=Math.floor(Math.random()*PROMPTS.length), armed=null;
 function openSheet(id){
   if(!doc.songs[id]) return;
-  openId=id; look[id]=Date.now(); LS.set(rk('jb.look'),look); $('#shEdit').hidden=true;
+  openId=id; look[id]=Date.now(); LS.set(rk('art.look'),look); $('#shEdit').hidden=true;
   $('#shText').value=LS.get(draftKey(id),''); fixSave();
   renderSheet(); $('#sheet').scrollTop=0;
   $('#sheet').inert=false; $('#sheet').classList.add('on'); $('#scrim').classList.add('on'); document.body.style.overflow='hidden';
@@ -1115,7 +1115,7 @@ const INAPP=/FBAN|FBAV|FB_IAB|FBIOS|Messenger|Instagram|WhatsApp|MicroMessenger|
 const STANDALONE=navigator.standalone===true||!!(window.matchMedia&&matchMedia('(display-mode: standalone)').matches);
 let installEvt=null;
 window.addEventListener('beforeinstallprompt',e=>{ e.preventDefault(); installEvt=e; renderHint(); });
-window.addEventListener('appinstalled',()=>{ installEvt=null; LS.set('jb.homeDone',true); renderHint(); });
+window.addEventListener('appinstalled',()=>{ installEvt=null; LS.set('art.homeDone',true); renderHint(); });
 if(!IOS){ const l=document.createElement('link'); l.rel='manifest'; l.href='manifest.webmanifest'; document.head.append(l); } // iPhones save the page address instead; a manifest start address there would drop the setup
 function setupCode(){
   if(!rooms.length) return '';
@@ -1146,7 +1146,7 @@ function releaseHomeHash(){ if(hashHeld){ hashHeld=false; stripHash(); } }
 function shareIcon(){ const s=document.createElement('span'); s.className='shico';
   s.innerHTML='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#7fd1c4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 8l5-5 5 5"/><path d="M5 12v8h14v-8"/></svg>'; return s; }
 function copyBtn(text,label,fallback){ return h('button',{class:'p5btn sm',text:label,onclick:async e=>{ const ok=await copyText(text); e.target.textContent=ok?'COPIED':'HOLD THE LINK BELOW, THEN COPY'; if(!ok&&fallback){ fallback.hidden=false; fallback.select(); } }}); }
-function homeDone(){ LS.set('jb.homeDone',true); closeModal(); renderHint(); }
+function homeDone(){ LS.set('art.homeDone',true); closeModal(); renderHint(); }
 function homeGuide(){
   const ttl=t=>h('div',{class:'mk',text:t}), li=(...k)=>h('li',null,...k), b=t=>h('b',{text:t});
   if(STANDALONE){ modal(ttl("IT'S ON YOUR HOME SCREEN"),h('p',{text:'You opened the jukebox from its icon. Nothing else to do.'})); return; }
@@ -1161,7 +1161,7 @@ function homeGuide(){
   if(installEvt){
     modal(ttl('PUT IT ON YOUR HOME SCREEN'),h('p',{text:'One tap and the jukebox gets its own icon.'}),
       h('button',{class:'p5btn sm',text:'ADD THE ICON',onclick:async()=>{ const e=installEvt; installEvt=null; closeModal();
-        try{ e.prompt(); const r=await e.userChoice; if(r&&r.outcome==='accepted'){ LS.set('jb.homeDone',true); callout('ON YOUR HOME SCREEN','info'); } }catch(x){} renderHint(); }}));
+        try{ e.prompt(); const r=await e.userChoice; if(r&&r.outcome==='accepted'){ LS.set('art.homeDone',true); callout('ON YOUR HOME SCREEN','info'); } }catch(x){} renderHint(); }}));
     return;
   }
   holdHomeHash();
@@ -1181,7 +1181,7 @@ function homeGuide(){
 }
 function renderHint(){
   const el=$('#homeHint'); if(!el) return;
-  el.hidden=!(R&&(IOS||ANDROID||installEvt)&&!STANDALONE&&!LS.get('jb.homeDone',false)&&!LS.get('jb.homeNo',false));
+  el.hidden=!(R&&(IOS||ANDROID||installEvt)&&!STANDALONE&&!LS.get('art.homeDone',false)&&!LS.get('art.homeNo',false));
 }
 
 /* ---------- dropping a coin ---------- */
@@ -1350,7 +1350,7 @@ $('#shEdSave').onclick=()=>{ const id=openId; if(!id) return; const t=$('#shEdT'
 $('#npNotes').onclick=()=>{ if(current) openSheet(current.songId); else { const ls=lastOnDeck(); if(ls) openSheet(ls.id); } };
 $('#gear').onclick=showSettings; $('#roomsBtn').onclick=showRooms;
 $('#homeGo').onclick=homeGuide;
-$('#homeNo').onclick=()=>{ LS.set('jb.homeNo',true); renderHint(); callout('IT LIVES IN SETTINGS IF YOU WANT IT','info',2600); };
+$('#homeNo').onclick=()=>{ LS.set('art.homeNo',true); renderHint(); callout('IT LIVES IN SETTINGS IF YOU WANT IT','info',2600); };
 $('#scrim').onclick=closeSheet; $('#shClose').onclick=closeSheet;
 $('#shPlay').onclick=()=>{ const s=doc.songs[openId]; if(s){ clink('coin'); playSong(s); renderSheet(); } };
 $('#shShare').onclick=()=>shareSong(openId);
