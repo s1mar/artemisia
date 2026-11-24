@@ -744,6 +744,8 @@ function renderNewPill(songs){ // one cue at the top: how many records and notes
   const fresh=songs.filter(isNewToMe), noted=songs.filter(x=>!isNewToMe(x)&&look[x.id]&&hasNewForMe(x));
   const parts=[]; if(fresh.length) parts.push(fresh.length+(fresh.length===1?' NEW RECORD':' NEW RECORDS')); if(noted.length) parts.push(noted.length+(noted.length===1?' NEW NOTE':' NEW NOTES'));
   pill.hidden=!parts.length; pill.textContent=parts.join(' + ')+'  \u2193';
+  if(!pill.hidden){ const mb=$('#members'), r=mb&&mb.childElementCount?mb.getBoundingClientRect():null; // sit below the members row, never on it
+    pill.style.top=r?Math.round(r.bottom+window.scrollY+6)+'px':''; }
   const first=[...fresh,...noted].sort((a,b)=>a.slot-b.slot)[0];
   pill.onclick=()=>{ if(!first) return; const card=document.querySelector('.strip[data-id="'+first.id+'"]'); if(!card) return;
     card.scrollIntoView({behavior:reduced?'auto':'smooth',block:'center'}); card.classList.remove('flash'); void card.offsetWidth; card.classList.add('flash'); };
