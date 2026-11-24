@@ -8,12 +8,12 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Artemisia">
 <link rel="apple-touch-icon" href="icon-180.png">
-<title>Artemisia</title>
+<title>Artemisia's Jukebox</title>
 <meta name="description" content="A little jukebox for you and your people. Drop a coin, pick a song.">
 <!-- the card chat apps show above a link; they never see the part after #, so no key reaches them -->
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Artemisia">
-<meta property="og:title" content="Artemisia">
+<meta property="og:title" content="Artemisia's Jukebox">
 <meta property="og:description" content="A little jukebox for you and your people. Drop a coin, pick a song.">
 <meta property="og:url" content="https://s1mar.github.io/artemisia/">
 <meta property="og:image" content="https://s1mar.github.io/artemisia/preview.png">
@@ -681,7 +681,8 @@ function renderMembers(){
   for(const n of C.members(doc)){
     const p=doc.people[n], chip=h('span',{class:'member'+(n===me?' me':''),'data-t':'member','data-name':n},
       h('b',null,h('i',{class:'mdot',style:p.color?'background:'+p.color:null}),h('span',{text:n})));
-    if(C.canSee(doc,me,n)){ const t=doc.seen[n]||0; chip.append(h('span',{class:'seen','data-t':'seen',text:t?(Date.now()-t<7*60000?'here now':agoText(t)):'not yet'})); }
+    if(n===me) chip.append(h('span',{class:'seen',text:'you'})); // the header already shows me; this marks my own chip so it never reads as a second person online
+    else if(C.canSee(doc,me,n)){ const t=doc.seen[n]||0; chip.append(h('span',{class:'seen','data-t':'seen',text:t?(Date.now()-t<7*60000?'here now':agoText(t)):'not yet'})); }
     box.append(chip);
   }
 }
@@ -876,7 +877,7 @@ function showWelcome(canClose){
   const go=()=>{ const p=JBRooms.parseLink(inp.value.trim()); if(!p){ callout('THAT IS NOT A JUKEBOX LINK','bad',3000); return; } closeModal(); showJoin(p); };
   inp.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); go(); } });
   const row=h('div',{class:'row',hidden:true},inp,h('button',T('paste-go',{class:'p5btn sm',text:'GO',onclick:go})));
-  modal({locked:!canClose},mk('ARTEMISIA ','A JUKEBOX'),
+  modal({locked:!canClose},mk("ARTEMISIA'S ",'JUKEBOX'),
     h('p',{text:'Start one, send the link, and add songs and notes together. No sign-up.'}),
     h('button',T('create',{class:'p5btn',text:'START A JUKEBOX',onclick:showCreate})),
     h('button',T('paste',{class:'p5btn sm gold',text:'I HAVE A LINK',onclick:()=>{ row.hidden=false; inp.focus(); }})),
